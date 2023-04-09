@@ -1,0 +1,284 @@
+{% extends "layout.html" %}
+    {% block content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h2 class="h4">{% if title %}{{title}}{% else %}No Title{% endif %}</h2>
+
+    </div>
+
+    <div class="row">
+        <div class="col-6 mb-4">
+            <div class="btn-group" role="group" aria-label="Basic example">
+              <button type="button" id="ds_price" class="btn btn-sm btn-outline-secondary" style="display:none">Price</button>
+              <button type="button" id="ds_count" class="btn btn-sm btn-outline-secondary">Обьем</button>
+            </div>
+            <canvas id="myChart1" class="seg_chart_1" style="display: none;" width="400" height="300"></canvas>
+            <canvas id="myChart2" class="seg_chart_2" style="" width="400" height="300"></canvas>
+        </div>
+        <div class="col-6 mb-4">
+            <canvas id="myChart3" class="seg_chart_1" style="display:none;" width="400" height="300"></canvas>
+        </div>
+    </div>
+
+    <div class="mb-4">
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
+      Добавить запись
+    </button>
+        <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#analysisModal">
+      Анализ записи
+    </button>
+    </div>
+
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Добавить запись</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Закрыть">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+            <form action="/process" method="POST" enctype = "multipart/form-data">
+          <div class="modal-body">
+            <p>Время звонка</p>
+              <div class="mb-3">
+                  <input type="datetime-local" name="date">
+              </div>
+              <div class="mb-3">
+                  <label>Выберите тип звонка</label>
+                  <div>
+                  <input type="radio" id="outcoming"name="type" value="Исходящий" checked>
+                  <label for="outcoming">Исходящий</label>
+                  </div>
+                  <div>
+                  <input type="radio" id="incoming" name="type" value="Входящий">
+                  <label for="incoming">Входящий</label>
+                  </div>
+              </div>
+
+              <div class="mb-3">
+                  <label for="manager-name">Имя</label>
+                  <div>
+                  <input type="text" id="manager-name" name="manager" required>
+                  </div>
+              </div>
+
+              <div class="mb-3">
+                  <label for="transcript-ta" class="form-label">Транскрипт</label>
+                  <textarea class="form-control" name="transcript" id="transcript-ta" rows="3"></textarea>
+              </div>
+              <div class="mb-3">
+                  <label for="formFile" class="form-label">Аудио-файл</label>
+                  <input class="form-control" type="file" accept=".mp3,.avi,.m4a" name="file" id="formFile">
+              </div>
+              <div class="mb-3">
+                  <div>
+                  <input type="radio" id="sold" name="status" value="Продано">
+                  <label for="sold">Продано</label>
+                  </div>
+                  <div>
+                  <input type="radio" id="failed" name="status" value="Отказано">
+                  <label for="failed">Отказано</label>
+                  </div>
+              </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+          </div>
+            </form>
+        </div>
+      </div>
+    </div>
+
+     <div class="modal fade" id="analysisModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Анализ записи</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Закрыть">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+            <form action="/analyze" method="POST" enctype = "multipart/form-data">
+          <div class="modal-body">
+
+              <div class="mb-3">
+                  <label for="transcript-ta" class="form-label">Транскрипт</label>
+                  <textarea class="form-control" name="transcript" id="transcript-analysis" rows="3"></textarea>
+              </div>
+              <div class="mb-3">
+                  <label for="formFile" class="form-label">Аудио-файл</label>
+                  <input class="form-control" type="file" accept=".mp3,.avi,.m4a" name="file" id="formFile-analysis">
+              </div>
+              <div class="mb-3">
+                  <label for="output-analysis">Вывод</label>
+                  <textarea class="form-control bg-dark" id="output-analysis" style="color: white;" readonly>Здесь будет вывод языковой модели</textarea>
+              </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" onclick="analyze();">Анализировать</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+          </div>
+            </form>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="row">
+        <div class="w-100">
+
+    {% if deals|length > 0 %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover fixed-layout-table">
+              <thead class="thead-light">
+                <tr>
+                    <th width="150" scope="col">Создан</th>
+                    <th width="150" scope="col">Тип</th>
+                    <th width="150" scope="col">От кого</th>
+                    <th scope="col">Запись</th>
+                    <th scope="col">Комментарии</th>
+                    <th width="150" scope="col">Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for deal in deals %}
+                <tr>
+                    <td>{{ deal.date }}</td>
+                    <td>{{ deal.type }}</td>
+                    <td>{{ deal.caller }}</td>
+                    <td>
+                        {% if deal.file is not none %}
+                        <audio controls>
+                        <source src='{{ deal.file }}' type="audio/mp3">
+                        Your browser does not support the audio element.
+                        </audio>
+                        {% endif %}
+                    </td>
+                    <td>{{ deal.commentaries }}</td>
+
+                    <td><span class="badge badge-info">{{ deal.status }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="container text-center pt-4">
+            <div><span data-feather="eye-off"></span></div>
+            <p>No deal stage records found.</p>
+        </div>
+    {% endif %}
+        </div>
+    </div>
+
+<script>
+
+    async function analyze(){
+        const analysisfile = document.getElementById('formFile-analysis');
+        const analysistext = document.getElementById('transcript-analysis');
+
+        let formdata = new FormData();
+        formdata.append("transcript", analysistext.value);
+
+        if(analysisfile.files.length !== 0){
+            formdata.append("file", analysisfile.files[0]);
+        }
+
+        const response = await fetch('/analyze', {
+            method: "POST",
+            body: formdata
+        });
+        const answer = await response.json();
+
+        const outputArea = document.getElementById('output-analysis');
+        outputArea.innerHTML = answer.text;
+    }
+
+    const trans = document.getElementById('transcript-ta');
+    const audio = document.getElementById('formFile');
+
+    trans.addEventListener('input', () => {
+        if(trans.value !== ''){
+            audio.setAttribute('style', 'pointer-events: none;');
+            audio.setAttribute('readonly', true);
+        }
+        else{
+            audio.removeAttribute('style');
+            audio.removeAttribute('readonly');
+        }
+    });
+
+    const alztranscript = document.getElementById('transcript-analysis');
+    const alzfile = document.getElementById('formFile-analysis');
+
+    alztranscript.addEventListener('input', () => {
+        if(alztranscript.value !== ''){
+            alzfile.setAttribute('style', 'pointer-events: none;');
+            alzfile.setAttribute('readonly', true);
+        }
+        else{
+            alzfile.removeAttribute('style');
+            alzfile.removeAttribute('readonly');
+        }
+    });
+
+</script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.min.js"></script>
+<script src="{{ url_for('static', filename='scripts/reports/deal_stage_reports.js') }}"></script>
+    <script>
+            $(document).ready(function() {
+                var label_arr = [];
+                var success = [];
+                var fail = [];
+
+                {% for deal in deals %}
+                    label_arr.push('{{ deal.caller }}');
+                    if('{{ deal.status }}' === 'Продано'){
+                        success.push('{{ deal.status }}')
+                    }
+                    else{
+                        fail.push('{{ deal.status }}')
+                    }
+
+                    //data_arr1.push('{{ deal.status }}');
+                {% endfor %}
+
+                //plot_deal_stage_report_price_bar_graph(label_arr, ['тест', 'тест']);
+                plot_deal_stage_report_count_bar_graph(["Продано", "Отказано"], [success.length, fail.length]);
+                //plot_deal_stage_report_price_pie_chart(label_arr, data_arr);
+
+                $('#ds_price')
+                    .removeClass('btn-outline-secondary')
+                    .addClass('btn-secondary');
+
+                $('#ds_price').on('click', function() {
+                    $('#myChart1').css('display', 'block');
+                    $('#myChart2').css('display', 'none');
+
+                    $('#ds_price')
+                        .removeClass('btn-outline-secondary')
+                        .addClass('btn-secondary');
+
+                    $('#ds_count')
+                        .removeClass('btn-secondary')
+                        .addClass('btn-outline-secondary');
+                });
+
+                 $('#ds_count').on('click', function() {
+                    $('#myChart1').css('display', 'none');
+                    $('#myChart2').css('display', 'block');
+
+                    $('#ds_price')
+                        .removeClass('btn-secondary')
+                        .addClass('btn-outline-secondary');
+
+                    $('#ds_count')
+                        .removeClass('btn-outline-secondary')
+                        .addClass('btn-secondary');
+                 });
+            });
+    </script>
+    {% endblock %}
